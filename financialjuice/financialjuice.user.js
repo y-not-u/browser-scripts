@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         FinancialJuice Cleaner + Auto Translate
 // @namespace    https://www.financialjuice.com/
-// @version      0.2.1
+// @version      0.2.2
 // @description  Remove ads/promotional blocks on FinancialJuice home and auto-trigger Google Translate to Chinese.
 // @author       Codex
 // @match        https://www.financialjuice.com/home*
@@ -177,6 +177,7 @@
     if (!(el instanceof Element) || !el.isConnected) return;
 
     const container =
+      el.closest('.headline-item') ||
       el.closest('.tradingview-widget-container') ||
       el.closest('.ts-widget') ||
       el.closest('#divWorthYourTime') ||
