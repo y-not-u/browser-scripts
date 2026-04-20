@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         FinancialJuice Cleaner + Auto Translate
 // @namespace    https://www.financialjuice.com/
-// @version      0.2.0
+// @version      0.2.1
 // @description  Remove ads/promotional blocks on FinancialJuice home and auto-trigger Google Translate to Chinese.
 // @author       Codex
 // @match        https://www.financialjuice.com/home*
@@ -48,6 +48,12 @@
     'sponsor',
     'promo',
     'advert'
+  ];
+
+  const promoTextPatterns = [
+    ['don\'t like ads', 'upgrade to pro'],
+    ['dont like ads', 'upgrade to pro'],
+    ['不喜欢广告', '升级到专业版']
   ];
 
   function injectBaseStyles() {
@@ -161,6 +167,9 @@
     if (isPromoLink(el)) return true;
 
     const text = textOf(el);
+    if (promoTextPatterns.some((parts) => parts.every((part) => text.includes(part)))) {
+      return true;
+    }
     return removalHints.some((hint) => text.includes(hint));
   }
 
@@ -182,6 +191,11 @@
   }
 
   function sweepAds(root = document) {
+    if (root instanceof Element && matchesAdHeuristic(root)) {
+      removeNode(root);
+      return;
+    }
+
     adSelectors.forEach((selector) => {
       root.querySelectorAll(selector).forEach(removeNode);
     });
@@ -202,6 +216,18 @@
   function observeAds() {
     const observer = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
+        if (mutation.type === 'characterData') {
+          const target = mutation.target.parentElement;
+          if (!(target instanceof Element)) continue;
+
+          if (matchesAdHeuristic(target)) {
+            removeNode(target);
+          } else {
+            sweepAds(target);
+          }
+          continue;
+        }
+
         for (const node of mutation.addedNodes) {
           if (!(node instanceof Element)) continue;
           if (matchesAdHeuristic(node)) {
@@ -215,7 +241,8 @@
 
     observer.observe(document.documentElement, {
       childList: true,
-      subtree: true
+      subtree: true,
+      characterData: true
     });
   }
 
